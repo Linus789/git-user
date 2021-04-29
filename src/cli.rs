@@ -88,22 +88,14 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
                 let email = add.email.unwrap_or_else(|| default_email(&name));
                 (profile, name, email)
             } else {
-                let profile: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-                    .with_prompt("Profile")
-                    .interact_text()?;
+                let profile = prompt_input("Profile", None);
 
                 if !ProfileRequirement::NonExistent.check_and_print(&table, &profile) {
                     std::process::exit(1);
                 }
 
-                let name: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-                    .with_prompt("Name")
-                    .default(profile.to_string())
-                    .interact_text()?;
-                let email: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
-                    .with_prompt("Email")
-                    .default(default_email(&name))
-                    .interact_text()?;
+                let name = prompt_input("Name", Some(profile.to_string()));
+                let email = prompt_input("Email", Some(default_email(&name)));
                 (profile, name, email)
             };
 
@@ -254,15 +246,39 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> std::io::Resul
         .interact();
 
     // In case ctrl-c is used to exit, do not print an error
-    if let Err(error) = selection {
+    handle_prompt_error(&selection);
+
+    Ok(profiles.remove(selection.unwrap()))
+}
+
+fn prompt_input(title: &str, default: Option<String>) -> String {
+    let theme = dialoguer::theme::ColorfulTheme::default();
+    let mut input: dialoguer::Input<String> = dialoguer::Input::with_theme(&theme);
+
+    input.with_prompt(title);
+
+    if let Some(default) = default {
+        input.default(default);
+    }
+
+    let result = input.interact_text();
+
+    // In case ctrl-c is used to exit, do not print an error
+    handle_prompt_error(&result);
+
+    result.unwrap()
+}
+
+fn handle_prompt_error<T>(error: &std::io::Result<T>) {
+    if let Err(error) = error {
         if error.kind() != std::io::ErrorKind::Interrupted {
             println!("{}", error);
+        } else {
+            println!();
         }
 
         std::process::exit(130);
     }
-
-    Ok(profiles.remove(selection.unwrap()))
 }
 
 /// Apply name and email to the local git repository
