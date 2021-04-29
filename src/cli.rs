@@ -128,7 +128,7 @@ pub fn execute(path: &PathBuf, file_contents: &str, mut table: Table) -> std::io
             table.remove(&profile);
             write_toml(path, &table)?;
         }
-        RemoveAll => {
+        Reset => {
             std::fs::write(&path, "")?;
         }
         Set(subcmd) => {
@@ -401,7 +401,7 @@ enum RootSubcommand {
     /// Remove a user profile
     Remove(Profile),
     /// Remove all user profiles
-    RemoveAll,
+    Reset,
     /// Set a new value in a profile (e. g. to change the email)
     Set(SetCommand),
     /// Print the file path where the profiles are stored and its contents

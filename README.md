@@ -47,7 +47,7 @@ git-user add <profile>
 git-user remove [profile]
 
 # Remove all user profiles
-git-user remove-all
+git-user reset
 
 # Rename a profile
 git-user set profile <profile-name> <new-profile-name>
@@ -88,6 +88,6 @@ SUBCOMMANDS:
     help          Prints this message or the help of the given subcommand(s)
     list          List all profiles
     remove        Remove a user profile
-    remove-all    Remove all user profiles
+    reset         Remove all user profiles
     set           Set a new value in a profile (e. g. to change the email)
 ```
