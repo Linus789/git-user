@@ -20,7 +20,7 @@ This will install git-user in your `~/.cargo/bin` (or Windows: `%USERPROFILE%\.c
 
 Make sure to add the `~/.cargo/bin` (or Windows: `%USERPROFILE%\.cargo\bin`) directory to your PATH variable.
 
-## Commands:
+## Commands
 ```
 # Apply a profile to set the user for the local git repository
 git-user
@@ -68,7 +68,7 @@ git-user list
 git-user file
 ```
 
-## Help menu:
+## Help menu
 ```
 git-user 0.1.0
 Linus789
