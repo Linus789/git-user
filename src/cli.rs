@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use clap::{AppSettings, Clap};
@@ -9,7 +9,7 @@ use crate::cli::RootSubcommand::*;
 use crate::cli::SetSubcommand::*;
 use crate::{Git, Item};
 
-pub fn execute(path: &PathBuf, file_contents: &str, mut table: Table) -> std::io::Result<()> {
+pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::Result<()> {
     let opts = Opts::parse();
 
     // In some cases git has to be installed
@@ -84,8 +84,8 @@ pub fn execute(path: &PathBuf, file_contents: &str, mut table: Table) -> std::io
                     std::process::exit(1);
                 }
 
-                let name = add.name.unwrap_or(profile.clone());
-                let email = add.email.unwrap_or(default_email(&name));
+                let name = add.name.unwrap_or_else(|| profile.clone());
+                let email = add.email.unwrap_or_else(|| default_email(&name));
                 (profile, name, email)
             } else {
                 let profile: String = dialoguer::Input::with_theme(&dialoguer::theme::ColorfulTheme::default())
@@ -242,10 +242,8 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> std::io::Resul
 
         display.push(format!("{} : {}", name, email));
 
-        if default_current {
-            if name == curr_name.as_deref().unwrap() && email == curr_email.as_deref().unwrap() {
-                default_index = index;
-            }
+        if default_current && name == curr_name.as_deref().unwrap() && email == curr_email.as_deref().unwrap() {
+            default_index = index;
         }
     }
 
@@ -255,9 +253,8 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> std::io::Resul
         .items(&display[..])
         .interact();
 
-    if selection.is_err() {
-        let error = selection.unwrap_err();
-
+    // In case ctrl-c is used to exit, do not print an error
+    if let Err(error) = selection {
         if error.kind() != std::io::ErrorKind::Interrupted {
             println!("{}", error);
         }
@@ -378,7 +375,7 @@ fn get_git_email() -> std::io::Result<GitResult> {
     get_git_attr(Git::ATTR_EMAIL)
 }
 
-fn write_toml<T: serde::ser::Serialize>(path: &PathBuf, value: &T) -> std::io::Result<()> {
+fn write_toml<T: serde::ser::Serialize>(path: &Path, value: &T) -> std::io::Result<()> {
     let toml = toml::to_string(value).unwrap();
     std::fs::write(&path, toml)?;
     Ok(())
