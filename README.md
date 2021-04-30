@@ -13,7 +13,7 @@ git config user.email <email>
 In order to install, just run the following command
 
 ```
-cargo install --force --git https://github.com/Linus789/git-user.git
+cargo install --force git-user
 ```
 
 This will install git-user in your `~/.cargo/bin` (or Windows: `%USERPROFILE%\.cargo\bin`).
