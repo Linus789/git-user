@@ -168,6 +168,8 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
         File => {
             if let Some(path_str) = path.to_str() {
                 println!(">>> {}", path_str);
+            } else {
+                println!(">>> ERROR: Could not get path");
             }
 
             println!("{}", file_contents);
