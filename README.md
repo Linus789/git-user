@@ -46,9 +46,6 @@ git-user add <profile>
 # Remove a user profile
 git-user remove [profile]
 
-# Remove all user profiles
-git-user reset
-
 # Rename a profile
 git-user set profile <profile-name> <new-profile-name>
 
@@ -57,6 +54,9 @@ git-user set name <profile> <name>
 
 # Change the email of a profile
 git-user set email <profile> <email>
+
+# Removes all directories and files ever created by this application
+git-user reset
 
 # Show the current user of the local git repository
 git-user current
@@ -88,6 +88,6 @@ SUBCOMMANDS:
     help          Prints this message or the help of the given subcommand(s)
     list          List all profiles
     remove        Remove a user profile
-    reset         Remove all user profiles
+    reset         Removes all directories and files ever created by this application
     set           Set a new value in a profile (e. g. to change the email)
 ```

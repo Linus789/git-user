@@ -121,7 +121,17 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             write_toml(path, &table)?;
         }
         Reset => {
-            std::fs::write(&path, "")?;
+            if let Some(parent_dir) = path.parent()  {
+                std::fs::remove_dir_all(parent_dir)?;
+            } else {
+                if let Some(path) = path.to_str() {
+                    eprintln!("ERROR: Could not get parent directory of '{}'", path);
+                } else {
+                    eprintln!("ERROR: Could not get parent directory");
+                }
+
+                std::process::exit(2);
+            }
         }
         Set(subcmd) => {
             match subcmd.subcmd {
@@ -415,7 +425,7 @@ enum RootSubcommand {
     Add(Add),
     /// Remove a user profile
     Remove(Profile),
-    /// Remove all user profiles
+    /// Removes all directories and files ever created by this application
     Reset,
     /// Set a new value in a profile (e. g. to change the email)
     Set(SetCommand),
