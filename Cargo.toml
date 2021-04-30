@@ -1,6 +1,6 @@
 [package]
 name = "git-user"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Linus789"]
 edition = "2018"
 description = "A simple way to change the user of a git repository"

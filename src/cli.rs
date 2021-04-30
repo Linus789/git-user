@@ -461,7 +461,7 @@ fn write_toml<T: serde::ser::Serialize>(path: &Path, value: &T) {
 
 #[derive(Clap)]
 #[clap(setting = AppSettings::VersionlessSubcommands)]
-#[clap(version = "0.1.1", author = "Linus789")]
+#[clap(version = "0.1.2", author = "Linus789")]
 struct Opts {
     #[clap(subcommand)]
     subcmd: Option<RootSubcommand>,
