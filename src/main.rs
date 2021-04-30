@@ -19,7 +19,7 @@ impl Git {
     const ATTR_EMAIL: &'static str = "user.email";
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let data_dir = match dirs::data_dir() {
         None => {
             eprintln!("ERROR: Could not find data directoy");
@@ -32,18 +32,19 @@ fn main() -> std::io::Result<()> {
     let git_user_file_path = git_user_dir_path.join("profiles");
 
     // create directory if non-existent
-    std::fs::create_dir_all(&git_user_dir_path)?;
+    std::fs::create_dir_all(&git_user_dir_path).unwrap();
 
     let mut file = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
-        .open(&git_user_file_path)?;
+        .open(&git_user_file_path)
+        .unwrap();
 
     let mut buffer = String::new();
-    file.read_to_string(&mut buffer)?;
+    file.read_to_string(&mut buffer).unwrap();
 
-    let file_items = toml::from_str::<toml::Value>(&buffer)?;
+    let file_items = toml::from_str::<toml::Value>(&buffer).unwrap();
 
     if !is_valid_data(&file_items) {
         if let Some(path) = git_user_file_path.to_str() {
@@ -64,9 +65,7 @@ fn main() -> std::io::Result<()> {
     })
     .expect("Error setting Ctrl-C handler");
 
-    cli::execute(&git_user_file_path, &buffer, file_items.as_table().unwrap().clone())?;
-
-    Ok(())
+    cli::execute(&git_user_file_path, &buffer, file_items.as_table().unwrap().clone());
 }
 
 fn is_valid_data(value: &Value) -> bool {

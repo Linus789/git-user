@@ -9,7 +9,7 @@ use crate::cli::RootSubcommand::*;
 use crate::cli::SetSubcommand::*;
 use crate::{Git, Item};
 
-pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::Result<()> {
+pub fn execute(path: &Path, file_contents: &str, mut table: Table) {
     let opts = Opts::parse();
 
     // In some cases git has to be installed
@@ -29,7 +29,8 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             .arg("--version")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()?;
+            .status()
+            .unwrap();
 
         if !git_version.success() {
             eprintln!("ERROR: git not installed");
@@ -43,7 +44,8 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             .arg("status")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()?;
+            .status()
+            .unwrap();
 
         if !git_status.success() {
             eprintln!("ERROR: not inside a git directory");
@@ -53,9 +55,9 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
 
     // No argument passed? => show prompt to apply a profile
     if opts.subcmd.is_none() {
-        let profile = prompt_select_profile(&table, true)?;
-        apply(profile.name, profile.email)?;
-        return Ok(());
+        let profile = prompt_select_profile(&table, true);
+        apply(profile.name, profile.email);
+        return;
     }
 
     // Process input
@@ -64,7 +66,7 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             let profile = if let Some(profile) = profile.profile {
                 Cow::Owned(profile)
             } else {
-                Cow::Borrowed(prompt_select_profile(&table, true)?.profile)
+                Cow::Borrowed(prompt_select_profile(&table, true).profile)
             };
 
             if !ProfileRequirement::Existent.check_and_print(&table, &profile) {
@@ -74,7 +76,7 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             let name = get_name(&table, &profile);
             let email = get_email(&table, &profile);
 
-            apply(name, email)?;
+            apply(name, email);
         }
         Add(add) => {
             let default_email = |name: &str| -> String { format!("{}@users.noreply.github.com", name) };
@@ -104,13 +106,13 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             item_table.insert(Item::EMAIL.to_string(), toml::Value::String(email));
 
             table.insert(profile, toml::Value::Table(item_table));
-            write_toml(path, &table)?;
+            write_toml(path, &table);
         }
         Remove(profile) => {
             let profile = if let Some(profile) = profile.profile {
                 profile
             } else {
-                prompt_select_profile(&table, false)?.profile.to_string()
+                prompt_select_profile(&table, false).profile.to_string()
             };
 
             if !ProfileRequirement::Existent.check_and_print(&table, &profile) {
@@ -118,11 +120,11 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             }
 
             table.remove(&profile);
-            write_toml(path, &table)?;
+            write_toml(path, &table);
         }
         Reset => {
-            if let Some(parent_dir) = path.parent()  {
-                std::fs::remove_dir_all(parent_dir)?;
+            if let Some(parent_dir) = path.parent() {
+                std::fs::remove_dir_all(parent_dir).unwrap();
             } else {
                 if let Some(path) = path.to_str() {
                     eprintln!("ERROR: Could not get parent directory of '{}'", path);
@@ -173,7 +175,7 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
                 }
             }
 
-            write_toml(path, &table)?;
+            write_toml(path, &table);
         }
         File => {
             if let Some(path_str) = path.to_str() {
@@ -195,12 +197,12 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
                 }
             };
 
-            let git_name = get_git_name()?;
+            let git_name = get_git_name();
             check(&git_name, Git::ATTR_NAME);
 
             println!();
 
-            let git_email = get_git_email()?;
+            let git_email = get_git_email();
             check(&git_email, Git::ATTR_EMAIL);
         }
         List => {
@@ -215,23 +217,21 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) -> std::io::R
             }
         }
     }
-
-    Ok(())
 }
 
 /// Returns selected profile
-fn prompt_select_profile(table: &Table, default_current: bool) -> std::io::Result<ProfileInfo> {
+fn prompt_select_profile(table: &Table, default_current: bool) -> ProfileInfo {
     let mut profiles: Vec<ProfileInfo> = Vec::with_capacity(table.len());
     let mut display: Vec<String> = Vec::with_capacity(table.len());
 
     let curr_name = if default_current {
-        Some(get_git_name()?.output)
+        Some(get_git_name().output)
     } else {
         None
     };
 
     let curr_email = if default_current {
-        Some(get_git_email()?.output)
+        Some(get_git_email().output)
     } else {
         None
     };
@@ -251,6 +251,11 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> std::io::Resul
         }
     }
 
+    if display.is_empty() {
+        eprintln!("ERROR: You have to create a profile first. Use: git-user add");
+        std::process::exit(1);
+    }
+
     let selection = dialoguer::Select::with_theme(&dialoguer::theme::ColorfulTheme::default())
         .with_prompt("Select a git user")
         .default(default_index)
@@ -260,7 +265,7 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> std::io::Resul
     // In case ctrl-c is used to exit, do not print an error
     handle_prompt_error(&selection);
 
-    Ok(profiles.remove(selection.unwrap()))
+    profiles.remove(selection.unwrap())
 }
 
 fn prompt_input(title: &str, default: Option<String>) -> String {
@@ -284,7 +289,7 @@ fn prompt_input(title: &str, default: Option<String>) -> String {
 fn handle_prompt_error<T>(error: &std::io::Result<T>) {
     if let Err(error) = error {
         if error.kind() != std::io::ErrorKind::Interrupted {
-            println!("{}", error);
+            panic!("{:?}", error);
         } else {
             println!();
         }
@@ -294,30 +299,27 @@ fn handle_prompt_error<T>(error: &std::io::Result<T>) {
 }
 
 /// Apply name and email to the local git repository
-fn apply(name: &str, email: &str) -> std::io::Result<()> {
-    let set_attr = |attr: &str, value: &str| -> std::io::Result<()> {
+fn apply(name: &str, email: &str) {
+    let set_attr = |attr: &str, value: &str| {
         let success = Command::new("git")
             .arg("config")
             .arg(attr)
             .arg(value)
-            .output()?
+            .output()
+            .unwrap()
             .status
             .success();
 
         if !success {
             eprintln!("ERROR: Failed to set {}", attr);
         }
-
-        Ok(())
     };
 
     // git config user.name "Your Name"
-    set_attr(Git::ATTR_NAME, name)?;
+    set_attr(Git::ATTR_NAME, name);
 
     // git config user.email "you@example.com"
-    set_attr(Git::ATTR_EMAIL, email)?;
-
-    Ok(())
+    set_attr(Git::ATTR_EMAIL, email);
 }
 
 fn get_name<'a>(root_table: &'a Table, profile: &str) -> &'a str {
@@ -384,29 +386,28 @@ impl ProfileRequirement {
     }
 }
 
-fn get_git_attr(attr: &str) -> std::io::Result<GitResult> {
-    let output = Command::new("git").arg("config").arg(attr).output()?;
+fn get_git_attr(attr: &str) -> GitResult {
+    let output = Command::new("git").arg("config").arg(attr).output().unwrap();
     let lines = String::from_utf8_lossy(&output.stdout);
     let name = lines.lines().next().unwrap_or("");
 
-    Ok(GitResult {
+    GitResult {
         output: name.to_string(),
         success: output.status.success(),
-    })
+    }
 }
 
-fn get_git_name() -> std::io::Result<GitResult> {
+fn get_git_name() -> GitResult {
     get_git_attr(Git::ATTR_NAME)
 }
 
-fn get_git_email() -> std::io::Result<GitResult> {
+fn get_git_email() -> GitResult {
     get_git_attr(Git::ATTR_EMAIL)
 }
 
-fn write_toml<T: serde::ser::Serialize>(path: &Path, value: &T) -> std::io::Result<()> {
+fn write_toml<T: serde::ser::Serialize>(path: &Path, value: &T) {
     let toml = toml::to_string(value).unwrap();
-    std::fs::write(&path, toml)?;
-    Ok(())
+    std::fs::write(&path, toml).unwrap();
 }
 
 #[derive(Clap)]
