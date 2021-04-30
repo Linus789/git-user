@@ -3,6 +3,8 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use clap::{AppSettings, Clap};
+use strum::VariantNames;
+use strum_macros::EnumVariantNames;
 use toml::value::Table;
 
 use crate::cli::RootSubcommand::*;
@@ -136,43 +138,44 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) {
             }
         }
         Set(subcmd) => {
-            match subcmd.subcmd {
-                Profile(set_profile) => {
-                    if !ProfileRequirement::Existent.check_and_print(&table, &set_profile.profile_name) {
-                        std::process::exit(1);
+            if let Some(subcmd) = subcmd.subcmd {
+                match subcmd {
+                    Profile(set_profile) => {
+                        table_change_profile_name(&mut table, &set_profile.profile_name, set_profile.new_profile_name);
                     }
-
-                    if !ProfileRequirement::NonExistent.check_and_print(&table, &set_profile.new_profile_name) {
-                        std::process::exit(1);
+                    Name(set_name) => {
+                        table_change_name(&mut table, &set_name.profile, set_name.name);
                     }
-
-                    let val = table.remove(&set_profile.profile_name).unwrap();
-                    table.insert(set_profile.new_profile_name, val);
+                    Email(set_email) => {
+                        table_change_email(&mut table, &set_email.profile, set_email.email);
+                    }
                 }
-                Name(set_name) => {
-                    if !ProfileRequirement::Existent.check_and_print(&table, &set_name.profile) {
-                        std::process::exit(1);
-                    }
+            } else {
+                // Interactive mode
+                let profile_name = prompt_select_profile(&table, false).profile.to_string();
+                let options: &[&'static str] = SetSubcommand::VARIANTS;
+                let selected_option = options[prompt_select("Set new value for", options, 0)];
 
-                    table
-                        .get_mut(&set_name.profile)
-                        .unwrap()
-                        .as_table_mut()
-                        .unwrap()
-                        .insert(Item::NAME.to_string(), toml::Value::String(set_name.name));
-                }
-                Email(set_email) => {
-                    if !ProfileRequirement::Existent.check_and_print(&table, &set_email.profile) {
-                        std::process::exit(1);
-                    }
+                let value_title = match selected_option {
+                    "Profile" => "New profile name",
+                    "Name" => "New name",
+                    "Email" => "New email",
+                    _ => unreachable!(),
+                };
+                let new_value = prompt_input(value_title, None);
 
-                    table
-                        .get_mut(&set_email.profile)
-                        .unwrap()
-                        .as_table_mut()
-                        .unwrap()
-                        .insert(Item::EMAIL.to_string(), toml::Value::String(set_email.email));
-                }
+                match selected_option {
+                    "Profile" => {
+                        table_change_profile_name(&mut table, &profile_name, new_value);
+                    }
+                    "Name" => {
+                        table_change_name(&mut table, &profile_name, new_value);
+                    }
+                    "Email" => {
+                        table_change_email(&mut table, &profile_name, new_value);
+                    }
+                    _ => unreachable!(),
+                };
             }
 
             write_toml(path, &table);
@@ -256,16 +259,23 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> ProfileInfo {
         std::process::exit(1);
     }
 
+    let index = prompt_select("Select a git user", &display[..], default_index);
+
+    profiles.remove(index)
+}
+
+/// Shows prompt with multiple options to select from, returns the index of the chosen option
+fn prompt_select<T: ToString>(title: &str, items: &[T], default_index: usize) -> usize {
     let selection = dialoguer::Select::with_theme(&dialoguer::theme::ColorfulTheme::default())
-        .with_prompt("Select a git user")
+        .with_prompt(title)
         .default(default_index)
-        .items(&display[..])
+        .items(items)
         .interact();
 
     // In case ctrl-c is used to exit, do not print an error
     handle_prompt_error(&selection);
 
-    profiles.remove(selection.unwrap())
+    selection.unwrap()
 }
 
 fn prompt_input(title: &str, default: Option<String>) -> String {
@@ -344,6 +354,45 @@ fn get_email<'a>(root_table: &'a Table, profile: &str) -> &'a str {
         .unwrap()
         .as_str()
         .unwrap()
+}
+
+fn table_change_profile_name(table: &mut Table, profile_name: &str, new_profile_name: String) {
+    if !ProfileRequirement::Existent.check_and_print(&table, profile_name) {
+        std::process::exit(1);
+    }
+
+    if !ProfileRequirement::NonExistent.check_and_print(&table, &new_profile_name) {
+        std::process::exit(1);
+    }
+
+    let val = table.remove(profile_name).unwrap();
+    table.insert(new_profile_name, val);
+}
+
+fn table_change_name(table: &mut Table, profile: &str, new_name: String) {
+    if !ProfileRequirement::Existent.check_and_print(&table, profile) {
+        std::process::exit(1);
+    }
+
+    table
+        .get_mut(profile)
+        .unwrap()
+        .as_table_mut()
+        .unwrap()
+        .insert(Item::NAME.to_string(), toml::Value::String(new_name));
+}
+
+fn table_change_email(table: &mut Table, profile: &str, new_email: String) {
+    if !ProfileRequirement::Existent.check_and_print(&table, profile) {
+        std::process::exit(1);
+    }
+
+    table
+        .get_mut(profile)
+        .unwrap()
+        .as_table_mut()
+        .unwrap()
+        .insert(Item::EMAIL.to_string(), toml::Value::String(new_email));
 }
 
 struct ProfileInfo<'a> {
@@ -441,10 +490,10 @@ enum RootSubcommand {
 #[derive(Clap)]
 struct SetCommand {
     #[clap(subcommand)]
-    subcmd: SetSubcommand,
+    subcmd: Option<SetSubcommand>,
 }
 
-#[derive(Clap)]
+#[derive(Clap, EnumVariantNames)]
 enum SetSubcommand {
     /// To change profile values, e. g. the email
     Profile(SetProfile),
