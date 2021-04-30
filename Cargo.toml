@@ -1,8 +1,13 @@
 [package]
 name = "git-user"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Linus789"]
 edition = "2018"
+description = "A simple way to change the user of a git repository"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/Linus789/git-user"
+categories = ["command-line-utilities"]
 
 [dependencies]
 clap = "3.0.0-beta.2"

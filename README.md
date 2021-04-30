@@ -86,7 +86,7 @@ git-user -h
 
 ## Help menu
 ```
-git-user 0.1.0
+git-user 0.1.1
 Linus789
 
 USAGE:
