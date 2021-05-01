@@ -125,17 +125,7 @@ pub fn execute(path: &Path, file_contents: &str, mut table: Table) {
             write_toml(path, &table);
         }
         Reset => {
-            if let Some(parent_dir) = path.parent() {
-                std::fs::remove_dir_all(parent_dir).unwrap();
-            } else {
-                if let Some(path) = path.to_str() {
-                    eprintln!("ERROR: Could not get parent directory of '{}'", path);
-                } else {
-                    eprintln!("ERROR: Could not get parent directory");
-                }
-
-                std::process::exit(2);
-            }
+            std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
         }
         Set(subcmd) => {
             if let Some(subcmd) = subcmd.subcmd {
