@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request]
 jobs:
   test:
-    name: Builds
+    name: Checks
     strategy:
       fail-fast: false
       matrix:
@@ -44,12 +44,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install gcc-multilib
-      - name: Build
+      - name: Check
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
   nightly:
-    name: Nightly Builds
+    name: Nightly Check
     runs-on: ubuntu-latest
     steps:
       - name: Install rust
@@ -59,10 +59,10 @@ jobs:
           override: true
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Build
+      - name: Check
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: check
   lint:
     name: Linting (fmt + clippy)
     runs-on: ubuntu-latest
