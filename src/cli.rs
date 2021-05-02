@@ -251,7 +251,7 @@ fn prompt_select_profile(table: &Table, default_current: bool) -> ProfileInfo {
 
     let index = prompt_select("Select a git user", &display[..], default_index);
 
-    profiles.remove(index)
+    profiles.swap_remove(index)
 }
 
 /// Shows prompt with multiple options to select from, returns the index of the chosen option

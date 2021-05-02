@@ -65,6 +65,7 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
+    // Parse cli
     cli::execute(&git_user_file_path, &buffer, file_items.as_table().unwrap().clone());
 }
 
