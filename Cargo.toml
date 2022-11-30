@@ -10,12 +10,12 @@ repository = "https://github.com/Linus789/git-user"
 categories = ["command-line-utilities"]
 
 [dependencies]
-clap = "3.0.0-beta.2"
-toml = { version = "0.5.8", features = ["preserve_order"] }
-serde = { version = "1.0.125", features = ["derive"] }
+clap = { version = "3.2.23", features = ["derive"] }
+toml = { version = "0.5.9", features = ["preserve_order"] }
+serde = { version = "1.0.148", features = ["derive"] }
 dirs = "3.0.2"
 dialoguer = "0.8.0"
 console = "0.14.1"
-ctrlc = { version = "3.1.9", features = ["termination"] }
+ctrlc = { version = "3.2.3", features = ["termination"] }
 strum = "0.20"
 strum_macros = "0.20"

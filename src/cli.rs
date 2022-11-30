@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use clap::{AppSettings, Clap};
+use clap::Parser;
 use strum::VariantNames;
 use strum_macros::EnumVariantNames;
 use toml::value::Table;
@@ -347,11 +347,11 @@ fn get_email<'a>(root_table: &'a Table, profile: &str) -> &'a str {
 }
 
 fn table_change_profile_name(table: &mut Table, profile_name: &str, new_profile_name: String) {
-    if !ProfileRequirement::Existent.check_and_print(&table, profile_name) {
+    if !ProfileRequirement::Existent.check_and_print(table, profile_name) {
         std::process::exit(1);
     }
 
-    if !ProfileRequirement::NonExistent.check_and_print(&table, &new_profile_name) {
+    if !ProfileRequirement::NonExistent.check_and_print(table, &new_profile_name) {
         std::process::exit(1);
     }
 
@@ -360,7 +360,7 @@ fn table_change_profile_name(table: &mut Table, profile_name: &str, new_profile_
 }
 
 fn table_change_name(table: &mut Table, profile: &str, new_name: String) {
-    if !ProfileRequirement::Existent.check_and_print(&table, profile) {
+    if !ProfileRequirement::Existent.check_and_print(table, profile) {
         std::process::exit(1);
     }
 
@@ -373,7 +373,7 @@ fn table_change_name(table: &mut Table, profile: &str, new_name: String) {
 }
 
 fn table_change_email(table: &mut Table, profile: &str, new_email: String) {
-    if !ProfileRequirement::Existent.check_and_print(&table, profile) {
+    if !ProfileRequirement::Existent.check_and_print(table, profile) {
         std::process::exit(1);
     }
 
@@ -449,15 +449,14 @@ fn write_toml<T: serde::ser::Serialize>(path: &Path, value: &T) {
     std::fs::write(&path, toml).unwrap();
 }
 
-#[derive(Clap)]
-#[clap(setting = AppSettings::VersionlessSubcommands)]
+#[derive(Parser)]
 #[clap(version = "0.1.2", author = "Linus789")]
 struct Opts {
     #[clap(subcommand)]
     subcmd: Option<RootSubcommand>,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 enum RootSubcommand {
     /// Apply a profile to set the user for the local git repository
     Apply(Profile),
@@ -477,13 +476,13 @@ enum RootSubcommand {
     List,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct SetCommand {
     #[clap(subcommand)]
     subcmd: Option<SetSubcommand>,
 }
 
-#[derive(Clap, EnumVariantNames)]
+#[derive(Parser, EnumVariantNames)]
 enum SetSubcommand {
     /// To change profile values, e. g. the email
     Profile(SetProfile),
@@ -493,31 +492,31 @@ enum SetSubcommand {
     Email(SetEmail),
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct Profile {
     profile: Option<String>,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct Add {
     profile: Option<String>,
     name: Option<String>,
     email: Option<String>,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct SetProfile {
     profile_name: String,
     new_profile_name: String,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct SetName {
     profile: String,
     name: String,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct SetEmail {
     profile: String,
     email: String,
